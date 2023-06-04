@@ -19,5 +19,7 @@ class TestVariables {
 	/**
 	 * Kodtest Server API password (Used for /auth endpoint)
 	 */
-	final static String API_PASSWORD = "apiPassword!";
+	final static String API_PASSWORD = "apiPassword";
+
+	final static String API_URL = "http://localhost:";
 }

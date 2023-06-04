@@ -3,7 +3,15 @@ package com.infrasight.kodtest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.infrasight.kodtest.api.auth.AuthRequest;
+import okhttp3.*;
+import okhttp3.internal.http2.Header;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URI;
+
 
 /**
  * Simple concrete class for JUnit tests with uses {@link TestsSetup} as a
@@ -23,13 +31,47 @@ public class Tests extends TestsSetup {
 	}
 
 	@Test
-	public void assignment1() throws InterruptedException {
+	public void assignment1() throws InterruptedException, IOException {
 		assertTrue(serverUp);
 
 		/**
 		 * TODO: Add code to solve the first assignment. Add Assert to show that you
 		 * found the account for Vera
 		 */
+
+		//Authenticate user and get token
+
+		String authEndpoint = "/api/auth";
+
+		//OkHttpClient client = new OkHttpClient();
+
+		/*FormBody authRequestBody = new FormBody.Builder()
+				.add("user", TestVariables.API_USER)
+				.add("password", TestVariables.API_PASSWORD)
+				.build();*/
+
+		//TODO: CREATE JSON WITH USER AND PASSWORD
+		Gson gson = new Gson();
+		String requestBodyString = gson.toJson(authRequestBody);
+
+		RequestBody requestBody = RequestBody.create(MediaType.parse("application/json"), requestBodyString);
+
+
+
+		Request authRequest = new Request.Builder()
+				.url(TestVariables.API_URL + TestVariables.API_PORT + authEndpoint)
+				.post(requestBody)
+				.build();
+
+		OkHttpClient client = getHttpClientBuilder().build();
+
+		Call call = client.newCall(authRequest);
+
+		Response response = call.execute();
+
+		assertTrue(response.code()==200 && !response.body().string().isEmpty());
+
+
 	}
 
 	@Test
