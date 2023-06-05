@@ -50,51 +50,20 @@ public class Tests extends TestsSetup {
          * found the account for Vera
          */
 
-        //Authenticate user and get token
-        String authEndpoint = "/api/auth";
+        OkHttpClient client = new OkHttpClient();
 
-        Map<String, String> creds = new HashMap<>();
-        creds.put("password", "apiPassword");
-        creds.put("user", "apiUser");
-
-
-        ObjectMapper mapper = new ObjectMapper();
-
-        String json = mapper.writeValueAsString(creds);
-
-        System.out.println(json);
-
-        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json"), json);
-
-
-        Request authRequest = new Request.Builder()
-                .url(TestVariables.API_URL + TestVariables.API_PORT + authEndpoint)
-                .post(requestBody)
-                .build();
-
-
-        //create client
-        OkHttpClient client = getHttpClientBuilder().build();
-
-        Call call = client.newCall(authRequest);
-
-        Response response = call.execute();
-
-        ObjectMapper mapperResponse = new ObjectMapper();
-        String tokenString = mapperResponse.writeValueAsString(response.body().string());
-
-        String token = tokenString.split(":")[1].split("\"")[1].replace("\\", "");
-
-
-        System.out.println("Token: " + token);
-
+        String token = Authenticate(client);
 
         //code to get all Vera's accounts
 
         String accountsEndpoint = "/api/accounts";
-        String url = TestVariables.API_URL+TestVariables.API_PORT+accountsEndpoint;
+        String baseUrl = TestVariables.API_URL + TestVariables.API_PORT + accountsEndpoint;
 
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(baseUrl).newBuilder();
 
+        urlBuilder.addQueryParameter("filter", "employeeId=1337");
+
+        String url = urlBuilder.build().toString();
 
         Request accountRequest = new Request.Builder()
                 .header("Authorization", "Bearer " + token)
@@ -106,14 +75,21 @@ public class Tests extends TestsSetup {
 
         Response response2 = call2.execute();
 
+        String accounts = response2.body().string();
 
-        assertTrue(response.code() == 200);
+        StringReader stringReader = new StringReader(accounts);
 
+        JsonReader jsonReader = Json.createReader(stringReader);
 
+        JsonArray jsonArray = jsonReader.readArray();
+
+        var veraAccount = jsonArray.get(0);
+
+        assertTrue(response2.code() == 200 && !accounts.isEmpty()); //TODO: add assert showing that it is vera's account
     }
 
     @Test
-    public void assignment2() throws InterruptedException {
+    public void assignment2() throws InterruptedException, IOException {
         assertTrue(serverUp);
 
         /**
@@ -122,6 +98,41 @@ public class Tests extends TestsSetup {
          */
         int groupCount = 0;
 
+        OkHttpClient client = new OkHttpClient();
+
+        String token = Authenticate(client);
+
+        //code to get all Vera's accounts
+
+        String relationshipsEndpoint = "/api/relationships";
+        String baseUrl = TestVariables.API_URL + TestVariables.API_PORT + relationshipsEndpoint;
+
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(baseUrl).newBuilder();
+
+
+        //TODO: do account request from task 1 to retrieve the memberId instead of hardcoding
+        urlBuilder.addQueryParameter("filter", "memberId=vera_scope");
+        urlBuilder.addQueryParameter("filter", "objectType=GroupMember");
+
+
+        String url = urlBuilder.build().toString();
+
+        Request accountRequest = new Request.Builder()
+                .header("Authorization", "Bearer " + token)
+                .url(url)
+                .get()
+                .build();
+
+        Call call2 = client.newCall(accountRequest);
+        Response response2 = call2.execute();
+        String groups = response2.body().string();
+
+        StringReader stringReader = new StringReader(groups);
+        JsonReader jsonReader = Json.createReader(stringReader);
+        JsonArray jsonArray = jsonReader.readArray();
+
+        int numberOfGroups = (int) jsonArray.stream().count();
+        groupCount = numberOfGroups;
         // Assert which verifies the expected group count of 3
         assertEquals(3, groupCount);
 
@@ -158,5 +169,36 @@ public class Tests extends TestsSetup {
          * TODO: Add code to solve the fifth assignment. Add Asserts to verify the
          * managers requested
          */
+    }
+
+    private String Authenticate(OkHttpClient client) throws IOException {
+        //Authenticate user and get token
+        String authEndpoint = "/api/auth";
+
+        Map<String, String> creds = new HashMap<>();
+        creds.put("password", "apiPassword");
+        creds.put("user", "apiUser");
+
+
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(creds);
+
+        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json"), json);
+
+        Request authRequest = new Request.Builder()
+                .url(TestVariables.API_URL + TestVariables.API_PORT + authEndpoint)
+                .post(requestBody)
+                .build();
+
+        Call call = client.newCall(authRequest);
+
+        Response response = call.execute();
+
+        ObjectMapper mapperResponse = new ObjectMapper();
+        String tokenString = mapperResponse.writeValueAsString(response.body().string());
+
+        String token = tokenString.split(":")[1].split("\"")[1].replace("\\", "");
+
+        return token;
     }
 }

@@ -9,7 +9,7 @@ class TestVariables {
 	 * Port which Kodtest Server API is will run on. API will be accessible at
 	 * http://localhost:PORT for tests
 	 */
-	final static int API_PORT = 8080;
+	final static int API_PORT = 3000;
 
 	/**
 	 * Kodtest Server API user (Used for /auth endpoint)
