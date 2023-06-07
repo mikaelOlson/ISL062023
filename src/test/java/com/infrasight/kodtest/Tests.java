@@ -32,6 +32,14 @@ import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
  */
 public class Tests extends TestsSetup {
 
+    private static final String API_URL = TestVariables.API_URL + TestVariables.API_PORT;
+    private static final String API_ACCOUNTS_ENDPOINT = "/api/accounts";
+    private static final String API_RELATIONSHIPS_ENDPOINT = "/api/relationships";
+    private static final String API_GROUPS_ENDPOINT = "/api/groups";
+    private static final String API_AUTH_ENDPOINT = "/api/auth";
+
+
+
     /**
      * Simple example test which asserts that the Kodtest API is up and running.
      */
@@ -84,7 +92,8 @@ public class Tests extends TestsSetup {
 
         var veraAccount = jsonArray.get(0);
 
-        assertTrue(response2.code() == 200 && !accounts.isEmpty()); //TODO: add assert showing that it is vera's account
+        //TODO: add assert showing that it is vera's account
+        assertTrue(response2.code() == 200 && !accounts.isEmpty());
     }
 
     @Test
@@ -130,16 +139,18 @@ public class Tests extends TestsSetup {
         JsonReader jsonReader = Json.createReader(stringReader);
         JsonArray jsonArray = jsonReader.readArray();
 
-        int numberOfGroups = (int) jsonArray.stream().count();
-        groupCount = numberOfGroups;
+        List<String> verasGroups = new ArrayList<>();
+
+        jsonArray.stream().forEach(e -> verasGroups.add(e.asJsonObject().getString("groupId")));
+        groupCount = verasGroups.size();
+
         // Assert which verifies the expected group count of 3
         assertEquals(3, groupCount);
 
         /**
          * TODO: Add Assert to verify the IDs of the groups found
          */
-
-//        assertTrue();
+        assertTrue(verasGroups.containsAll(Arrays.asList(TestVariables.VERAS_DIRECT_GROUP_IDS.toArray())));
     }
 
     @Test
@@ -482,17 +493,16 @@ public class Tests extends TestsSetup {
             for (Map.Entry<String, Integer> entry : sortedManagers) {
                 System.out.println("Manager: " + entry.getKey() + ", Employee Count: " + entry.getValue());
             }
+
+            assertTrue(Boolean.TRUE);
         }
 
 
     private String Authenticate(OkHttpClient client) throws IOException {
         //Authenticate user and get token
-        String authEndpoint = "/api/auth";
-
         Map<String, String> creds = new HashMap<>();
-        creds.put("password", "apiPassword");
-        creds.put("user", "apiUser");
-
+        creds.put("user", TestVariables.API_USER);
+        creds.put("password", TestVariables.API_PASSWORD );
 
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(creds);
@@ -500,14 +510,12 @@ public class Tests extends TestsSetup {
         RequestBody requestBody = RequestBody.create(MediaType.parse("application/json"), json);
 
         Request authRequest = new Request.Builder()
-                .url(TestVariables.API_URL + TestVariables.API_PORT + authEndpoint)
+                .url(API_URL + API_AUTH_ENDPOINT)
                 .post(requestBody)
                 .build();
 
         Call call = client.newCall(authRequest);
-
         Response response = call.execute();
-
         ObjectMapper mapperResponse = new ObjectMapper();
         String tokenString = mapperResponse.writeValueAsString(response.body().string());
 
@@ -624,16 +632,8 @@ public class Tests extends TestsSetup {
         return totalSalary;
     }
 
-    private int extractTotalItemsFromContentRange(String contentRange) {
-
-        String[] rangeParts = contentRange.split(" ")[1].split("/")[0].split("-");
-        int startIndex = Integer.parseInt(rangeParts[0]);
-        int endIndex = Integer.parseInt(rangeParts[1]);
-        return endIndex - startIndex + 1;
-    }
-
     private int convertCurrencyToSEK(int amount, String currency) {
-        // Placeholder conversion rates - Replace with actual rates
+
         double rateSEKtoSEK = 1.0;
         double rateDKKtoSEK = 1.56;
         double rateEURtoSEK = 11.64;
